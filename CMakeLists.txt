@@ -6,10 +6,20 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+add_link_options(-fsanitize=address)
+
+add_library(treap STATIC
+    ./src/Treap.h
+    ./src/Treap.cpp
+)
+
 add_library(kv-storage STATIC 
     ./src/KVStorage.h 
     ./src/KVStorage.cpp
 )
+
+target_link_libraries(kv-storage treap)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -24,7 +34,7 @@ if(NOT googletest_POPULATED)
 endif()
 
 add_executable(tests 
-    unittests/tests.cpp
+    unittests/TreapTest.cpp
 )
 
 target_link_libraries(tests PRIVATE 
