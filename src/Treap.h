@@ -19,9 +19,9 @@ private:
 
 class Node {
 public:
-  Node(number_gen &gen);
+  explicit Node(number_gen &gen);
 
-  Node(number_gen &gen, const std::string &key, const std::string &value,
+  explicit Node(number_gen &gen, const std::string &key, const std::string &value,
        uint64_t ttl);
 
   friend Node *left(Node *n);
@@ -71,7 +71,7 @@ public:
   friend class Treap;
 
 private:
-  Node(std::uint32_t prio);
+  explicit Node(std::uint32_t prio);
 
   friend bool less(Node *a, Node *b);
 
@@ -91,7 +91,7 @@ private:
 
 class Treap {
 public:
-  Treap();
+  explicit Treap();
 
   ~Treap();
 

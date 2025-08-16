@@ -9,13 +9,13 @@
 #include <string>
 #include <vector>
 
-#include <iostream>
-
 #include "Treap.h"
 
 namespace detail {
 
 struct DefaultClock {
+
+  // should return seconds from epoch
   uint64_t now() const {
     return std::chrono::duration_cast<std::chrono::seconds>(
                std::chrono::steady_clock::now().time_since_epoch())
@@ -46,6 +46,7 @@ public:
   // Инициализирует хранилище переданным множеством записей. Размер span может
   // быть очень большим. Также принимает абстракцию часов (Clock) для
   // возможности управления временем в тестах.
+  // асимптотика - O(N * log(N))
   explicit KVStorage(
       std::span<std::tuple<std::string /*key*/, std::string /*value*/,
                            uint32_t /*ttl*/>>
@@ -62,6 +63,7 @@ public:
   // Присваивает по ключу key значение value.
   // Если ttl == 0, то время жизни записи - бесконечность, иначе запись должна
   // перестать быть доступной через ttl секунд. Безусловно обновляет ttl записи.
+  // асимптотика - O(log(N))
   void set(std::string key, std::string value, uint32_t ttl) {
     clear_by_ttl();
 
@@ -73,6 +75,7 @@ public:
   // Удаляет запись по ключу key.
   // Возвращает true, если запись была удалена. Если ключа не было до удаления,
   // то вернет false.
+  // асимптотика - O(log(N))
   bool remove(std::string_view key) {
     clear_by_ttl();
 
@@ -83,7 +86,8 @@ public:
 
   // Получает значение по ключу key. Если данного ключа нет, то вернет
   // std::nullopt.
-  std::optional<std::string> get(std::string_view key) {
+  // асимптотика - O(log(N))
+  std::optional<std::string> get(std::string_view key) const {
     clear_by_ttl();
 
     std::shared_lock lock(mutex);
@@ -99,8 +103,9 @@ public:
   // лексикографической сортировки ключей. Пример: ("a", "val1"), ("b", "val2"),
   // ("d", "val3"), ("e", "val4") getManySorted("c", 2) -> ("d", "val3"), ("e",
   // "val4")
+  // асимптотика - O(log(N) + count)
   std::vector<std::pair<std::string, std::string>>
-  getManySorted(std::string_view key, uint32_t count) {
+  getManySorted(std::string_view key, uint32_t count) const {
     clear_by_ttl();
 
     std::shared_lock lock(mutex);
@@ -112,7 +117,8 @@ public:
   // Удаляет протухшую запись из структуры и возвращает ее. Если удалять нечего,
   // то вернет std::nullopt. Если на момент вызова метода протухло несколько
   // записей, то можно удалить любую.
-  std::optional<std::pair<std::string, std::string>> removeOneExpiredEntry() {
+  // асимптотика - амортизированно O(log(N))
+  std::optional<std::pair<std::string, std::string>> removeOneExpiredEntry() const {
     std::unique_lock lock(mutex);
 
     // erase everything that is not relevant
@@ -131,10 +137,10 @@ public:
     return std::nullopt;
   }
 
-  uint32_t size() { return _data.size(); }
+  uint32_t size() const { return _data.size(); }
 
 private:
-  void pure_set(std::string key, std::string value, uint32_t ttl) {
+  void pure_set(std::string key, std::string value, uint32_t ttl) const {
     uint64_t end_time = get_end_time(ttl);
     _data.set(key, value, end_time);
     // i wont delete from _data_ttl_sorted, it would delete after
@@ -142,28 +148,31 @@ private:
     _data_ttl_sorted.insert({key, end_time});
   }
 
-  bool pure_remove(std::string_view key) {
+  bool pure_remove(std::string_view key) const {
     return _data.remove(std::string(key));
   }
 
-  void clear_by_ttl() {
+  void clear_by_ttl() const {
     while (size() > 0 && _data_ttl_sorted.begin()->ttl < get_time()) {
       removeOneExpiredEntry();
     }
   }
 
   // TODO: maybe clock.now() -> is not a proper way to get current time x)
-  uint64_t get_time() { return _clock.now(); }
+  uint64_t get_time() const { return _clock.now(); }
 
-  uint64_t get_end_time(uint64_t add) {
+  uint64_t get_end_time(uint64_t add) const {
     if (add == 0) {
       return -1;
     }
     return get_time() + add;
   }
 
+  // everything is mutable, because if we get a const storage with elemets, 
+  // that will drop out after some time,
+  // we still cant modify it, but it could delete elements itself
   mutable std::shared_mutex mutex;
-  detail::Treap _data;
-  std::set<detail::KeyNode, detail::KeyNodeComparator> _data_ttl_sorted;
-  Clock _clock;
+  mutable detail::Treap _data;
+  mutable std::set<detail::KeyNode, detail::KeyNodeComparator> _data_ttl_sorted;
+  mutable Clock _clock;
 };
