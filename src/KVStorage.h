@@ -4,10 +4,12 @@
 #include <mutex>
 #include <optional>
 #include <set>
+#include <shared_mutex>
 #include <span>
 #include <string>
 #include <vector>
-#include <shared_mutex>
+
+#include <iostream>
 
 #include "Treap.h"
 
@@ -15,7 +17,9 @@ namespace detail {
 
 struct DefaultClock {
   uint64_t now() const {
-      return std::chrono::steady_clock::now().time_since_epoch().count();
+    return std::chrono::duration_cast<std::chrono::seconds>(
+               std::chrono::steady_clock::now().time_since_epoch())
+        .count();
   }
 };
 
@@ -25,15 +29,15 @@ struct KeyNode {
 };
 
 struct KeyNodeComparator {
-  bool operator()(const KeyNode& a, const KeyNode& b) const {
-    if(a.ttl == b.ttl) {
+  bool operator()(const KeyNode &a, const KeyNode &b) const {
+    if (a.ttl == b.ttl) {
       return a.key < b.key;
     }
     return a.ttl < b.ttl;
   }
 };
 
-} // detail
+} // namespace detail
 
 template <typename Clock = detail::DefaultClock> class KVStorage {
 public:
@@ -46,7 +50,8 @@ public:
       std::span<std::tuple<std::string /*key*/, std::string /*value*/,
                            uint32_t /*ttl*/>>
           entries,
-      Clock clock = Clock()) : KVStorage(std::move(clock)) {
+      Clock clock = Clock())
+      : KVStorage(std::move(clock)) {
     for (const auto &[k, v, ttl] : entries) {
       set(k, v, ttl);
     }
@@ -62,10 +67,7 @@ public:
 
     std::unique_lock lock(mutex);
 
-    uint64_t end_time = get_end_time(ttl);
-    _data.set(key, value, end_time);
-    // i wont delete from _data_ttl_sorted, it would delete after removeOneExpiredEntry automatically.
-    _data_ttl_sorted.insert({key, end_time});
+    pure_set(key, value, ttl);
   }
 
   // Удаляет запись по ключу key.
@@ -76,7 +78,7 @@ public:
 
     std::unique_lock lock(mutex);
 
-    return _data.remove(std::string(key));
+    return pure_remove(key);
   }
 
   // Получает значение по ключу key. Если данного ключа нет, то вернет
@@ -114,7 +116,8 @@ public:
     std::unique_lock lock(mutex);
 
     // erase everything that is not relevant
-    while(ttl(_data.find(_data_ttl_sorted.begin()->key)) != _data_ttl_sorted.begin()->ttl) {
+    while (ttl(_data.find(_data_ttl_sorted.begin()->key)) !=
+           _data_ttl_sorted.begin()->ttl) {
       _data_ttl_sorted.erase(_data_ttl_sorted.begin());
     }
 
@@ -122,19 +125,29 @@ public:
     if (first->ttl < get_time()) {
       auto f = _data.find(first->key);
       std::pair<std::string, std::string> res = {key(f), value(f)};
-      remove(first->key);
+      pure_remove(first->key);
       return {res};
     }
     return std::nullopt;
   }
 
-  uint32_t size() {
-    return _data.size();
-  }
+  uint32_t size() { return _data.size(); }
 
 private:
+  void pure_set(std::string key, std::string value, uint32_t ttl) {
+    uint64_t end_time = get_end_time(ttl);
+    _data.set(key, value, end_time);
+    // i wont delete from _data_ttl_sorted, it would delete after
+    // removeOneExpiredEntry automatically.
+    _data_ttl_sorted.insert({key, end_time});
+  }
+
+  bool pure_remove(std::string_view key) {
+    return _data.remove(std::string(key));
+  }
+
   void clear_by_ttl() {
-    while(size() > 0 && _data_ttl_sorted.begin()->ttl < get_time()) {
+    while (size() > 0 && _data_ttl_sorted.begin()->ttl < get_time()) {
       removeOneExpiredEntry();
     }
   }
@@ -143,9 +156,9 @@ private:
   uint64_t get_time() { return _clock.now(); }
 
   uint64_t get_end_time(uint64_t add) {
-    if(add == 0) {
+    if (add == 0) {
       return -1;
-    } 
+    }
     return get_time() + add;
   }
 

@@ -36,6 +36,7 @@ endif()
 add_executable(tests 
     unittests/TreapTest.cpp
     unittests/KVStorageTest.cpp
+    unittests/MultiThreadTest.cpp
 )
 
 target_link_libraries(tests PRIVATE 

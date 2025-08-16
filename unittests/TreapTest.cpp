@@ -64,3 +64,13 @@ TEST(TreapTest, GetManySorted) {
   expected = {};
   ASSERT_EQ(t.getManySorted("a", 0), expected);
 }
+
+TEST(TreapTest, NotEnoughElemets) {
+  Treap t;
+  t.set("a", "1", 0);
+  std::vector<std::pair<std::string, std::string>> expected = {{"a", "1"}};
+  auto res = t.getManySorted("a", 100);
+  ASSERT_EQ(res, expected);
+  res = t.getManySorted("b", 1);
+  ASSERT_TRUE(res.empty());
+}

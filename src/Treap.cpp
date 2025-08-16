@@ -51,7 +51,7 @@ void Node::connect_right(Node *n) {
 
 Node *next(Node *n) {
   if (right(n) == nullptr) {
-    while (right(parent(n)) == n) {
+    while (parent(n) && right(parent(n)) == n) {
       n = parent(n);
     }
     n = parent(n);
@@ -143,7 +143,7 @@ std::vector<std::pair<std::string, std::string>>
 Treap::getManySorted(std::string_view k, uint32_t count) const {
   auto ptr = find(std::string(k));
   std::vector<std::pair<std::string, std::string>> res;
-  for (std::size_t i = 0; i < count; ++i) {
+  for (std::size_t i = 0; i < count && ptr != nullptr && ptr != _root; ++i) {
     res.emplace_back(key(ptr), value(ptr));
     ptr = next(ptr);
   }
@@ -156,7 +156,7 @@ bool Treap::remove(std::string_view k) {
   bool res = r1 != nullptr;
   _root = merge(l, r2);
   del(r1);
-  if(res) {
+  if (res) {
     --_size;
   }
   return res;
@@ -167,11 +167,10 @@ void Treap::set(std::string k, std::string value, uint64_t ttl) {
   auto [r1, r2] = split(r, k, true);
   if (r1 == nullptr) {
     ++_size;
-    _root = merge(l, merge(new Node(_gen, k, std::move(value), ttl), r2));
   } else {
-    r1->_value = value;
-    _root = merge(l, merge(r1, r2));
+    del(r1);
   }
+  _root = merge(l, merge(new Node(_gen, k, std::move(value), ttl), r2));
 }
 
 Node *Treap::begin() const { return leftmost(_root); }
@@ -181,8 +180,6 @@ Node *Treap::end() const { return _root; }
 Treap::Treap()
     : _gen(std::uniform_int_distribution<uint32_t>()), _root(new Node(-1)) {}
 
-uint32_t Treap::size() const {
-  return _size;
-}
+uint32_t Treap::size() const { return _size; }
 
 } // namespace detail
