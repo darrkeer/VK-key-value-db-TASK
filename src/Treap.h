@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <random>
-#include <stdexcept>
 #include <string>
 
 namespace detail {
@@ -23,7 +22,7 @@ public:
   Node(number_gen &gen);
 
   Node(number_gen &gen, const std::string &key, const std::string &value,
-       uint32_t ttl);
+       uint64_t ttl);
 
   friend Node *left(Node *n);
 
@@ -39,7 +38,7 @@ public:
 
   friend uint32_t prio(Node *n);
 
-  friend uint32_t ttl(Node *n);
+  friend uint64_t ttl(Node *n);
 
   void connect_left(Node *n);
 
@@ -85,7 +84,7 @@ private:
   Node *_left = nullptr;
   Node *_right = nullptr;
   Node *_parent = nullptr;
-  uint32_t _ttl = 0;
+  uint64_t _ttl = 0;
   uint32_t _size = 1;
   uint32_t _prio;
 };
@@ -103,15 +102,18 @@ public:
 
   bool remove(std::string_view k);
 
-  void set(std::string k, std::string value, uint32_t ttl);
+  void set(std::string k, std::string value, uint64_t ttl);
 
   Node *begin() const;
 
   Node *end() const;
 
+  uint32_t size() const;
+
 private:
   friend void del(Node *n);
 
+  std::uint32_t _size = 0;
   mutable number_gen _gen;
   mutable Node *_root;
 };

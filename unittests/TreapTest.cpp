@@ -6,6 +6,7 @@ using namespace detail;
 
 void CheckIsSame(const std::vector<std::pair<std::string, std::string>> &values,
                  Treap &t) {
+  ASSERT_EQ(values.size(), t.size());
   auto ptr = t.begin();
   std::size_t i = 0;
   while (ptr != t.end()) {
@@ -17,15 +18,16 @@ void CheckIsSame(const std::vector<std::pair<std::string, std::string>> &values,
 }
 
 TEST(TreapTest, Base) {
-  std::cerr << "start\n";
+  // std::cerr << "start\n";
   Treap t;
-  std::cerr << "created\n";
+  // std::cerr << "created\n";
   t.set("key", "value", 1);
-  std::cerr << "Set\n";
+  // std::cerr << "Set\n";
   ASSERT_EQ(t.find("x"), nullptr);
-  std::cerr << "find\n";
+  // std::cerr << "find\n";
   ASSERT_EQ(value(t.find("key")), "value");
-  std::cerr << "done\n";
+  // std::cerr << "done\n";
+  ASSERT_EQ(t.size(), 1);
 }
 
 TEST(TreapTest, Advanced) {

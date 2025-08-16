@@ -17,8 +17,15 @@ test: build
 build-%:
 	$(MAKE) build CONF=$*
 
-test-%:
-	$(MAKE) test CONF=$*
+test-%: build-%
+	cd $(BUILD_DIR) && GTEST_COLOR=1 \
+		&& ./tests --gtest_output="xml:test_detail.xml" \
+		--gtest_color=yes \
+		--gtest_print_time=1 \
+		--gtest_break_on_failure \
+		--gtest_print_utf8=1 \
+		|| (echo "Tests failed"; exit 1)
+
 
 clean:
 	rm -rf $(BUILD_DIR)

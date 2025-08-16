@@ -10,7 +10,7 @@ uint32_t number_gen::get() const { return _distrib(_gen); }
 Node::Node(number_gen &gen) : Node(gen.get()) {}
 
 Node::Node(number_gen &gen, const std::string &key, const std::string &value,
-           uint32_t ttl)
+           uint64_t ttl)
     : Node(gen) {
   _key = key;
   _value = value;
@@ -31,7 +31,7 @@ uint32_t size(Node *n) { return n == nullptr ? 0 : n->_size; }
 
 uint32_t prio(Node *n) { return n == nullptr ? 0 : n->_prio; }
 
-uint32_t ttl(Node *n) { return n == nullptr ? 0 : n->_ttl; }
+uint64_t ttl(Node *n) { return n == nullptr ? 0 : n->_ttl; }
 
 void Node::connect_left(Node *n) {
   if (n != nullptr) {
@@ -156,13 +156,17 @@ bool Treap::remove(std::string_view k) {
   bool res = r1 != nullptr;
   _root = merge(l, r2);
   del(r1);
+  if(res) {
+    --_size;
+  }
   return res;
 }
 
-void Treap::set(std::string k, std::string value, uint32_t ttl) {
+void Treap::set(std::string k, std::string value, uint64_t ttl) {
   auto [l, r] = split(_root, k);
   auto [r1, r2] = split(r, k, true);
   if (r1 == nullptr) {
+    ++_size;
     _root = merge(l, merge(new Node(_gen, k, std::move(value), ttl), r2));
   } else {
     r1->_value = value;
@@ -176,5 +180,9 @@ Node *Treap::end() const { return _root; }
 
 Treap::Treap()
     : _gen(std::uniform_int_distribution<uint32_t>()), _root(new Node(-1)) {}
+
+uint32_t Treap::size() const {
+  return _size;
+}
 
 } // namespace detail

@@ -35,6 +35,7 @@ endif()
 
 add_executable(tests 
     unittests/TreapTest.cpp
+    unittests/KVStorageTest.cpp
 )
 
 target_link_libraries(tests PRIVATE 
