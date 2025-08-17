@@ -14,7 +14,7 @@
 - `set(key, value, ttl)` - **O(log(N))**
 - `remove(key)` - **O(log(N))**
 - `get(key)` - **O(log(N))**
-- `getManySorted(key, count)` - **O(log(N) + x)**, *x* - обычно будет равен *count*, но может деградировать до *N*
+- `getManySorted(key, count)` - **O(log(N) + count)**
 - `removeOneExpiredEntry()` - **O(log(N))**
 
 ### *Оверхед на вставку одного элемента:*
