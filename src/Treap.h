@@ -64,7 +64,6 @@ public:
       return {n, r};
     }
   }
-  void update();
 
   friend class Treap;
 
