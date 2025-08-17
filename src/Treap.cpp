@@ -27,8 +27,6 @@ std::string key(Node *n) { return n == nullptr ? "" : n->_key; }
 
 std::string value(Node *n) { return n == nullptr ? "" : n->_value; }
 
-uint32_t size(Node *n) { return n == nullptr ? 0 : n->_size; }
-
 uint32_t prio(Node *n) { return n == nullptr ? 0 : n->_prio; }
 
 uint64_t ttl(Node *n) { return n == nullptr ? 0 : n->_ttl; }
@@ -38,7 +36,6 @@ void Node::connect_left(Node *n) {
     n->_parent = this;
   }
   _left = n;
-  update();
 }
 
 void Node::connect_right(Node *n) {
@@ -46,7 +43,6 @@ void Node::connect_right(Node *n) {
     n->_parent = this;
   }
   _right = n;
-  update();
 }
 
 Node *next(Node *n) {
@@ -90,8 +86,6 @@ Node *merge(Node *l, Node *r) {
     return r;
   }
 }
-
-void Node::update() { _size = size(left(this)) + size(right(this)); }
 
 Node::Node(std::uint32_t prio) : _prio(prio) {}
 

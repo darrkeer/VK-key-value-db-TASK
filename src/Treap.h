@@ -21,8 +21,8 @@ class Node {
 public:
   explicit Node(number_gen &gen);
 
-  explicit Node(number_gen &gen, const std::string &key, const std::string &value,
-       uint64_t ttl);
+  explicit Node(number_gen &gen, const std::string &key,
+                const std::string &value, uint64_t ttl);
 
   friend Node *left(Node *n);
 
@@ -33,8 +33,6 @@ public:
   friend std::string key(Node *n);
 
   friend std::string value(Node *n);
-
-  friend uint32_t size(Node *n);
 
   friend uint32_t prio(Node *n);
 
@@ -85,7 +83,6 @@ private:
   Node *_right = nullptr;
   Node *_parent = nullptr;
   uint64_t _ttl = 0;
-  uint32_t _size = 1;
   uint32_t _prio;
 };
 

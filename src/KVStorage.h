@@ -16,11 +16,7 @@ namespace detail {
 struct DefaultClock {
 
   // should return seconds from epoch
-  uint64_t now() const {
-    return std::chrono::duration_cast<std::chrono::seconds>(
-               std::chrono::steady_clock::now().time_since_epoch())
-        .count();
-  }
+  uint64_t now() const;
 };
 
 struct KeyNode {
@@ -29,12 +25,7 @@ struct KeyNode {
 };
 
 struct KeyNodeComparator {
-  bool operator()(const KeyNode &a, const KeyNode &b) const {
-    if (a.ttl == b.ttl) {
-      return a.key < b.key;
-    }
-    return a.ttl < b.ttl;
-  }
+  bool operator()(const KeyNode &a, const KeyNode &b) const;
 };
 
 } // namespace detail
@@ -63,7 +54,9 @@ public:
   // Присваивает по ключу key значение value.
   // Если ttl == 0, то время жизни записи - бесконечность, иначе запись должна
   // перестать быть доступной через ttl секунд. Безусловно обновляет ttl записи.
-  // асимптотика - O(log(N))
+  // Асимптотика - O(log(N))
+  // Оверхед на новый элемент - 30 байт + строка
+  // (дважды храню ttl и key, также Node* left, right, parent и uint32_t prio)
   void set(std::string key, std::string value, uint32_t ttl) {
     clear_by_ttl();
 
@@ -118,7 +111,8 @@ public:
   // то вернет std::nullopt. Если на момент вызова метода протухло несколько
   // записей, то можно удалить любую.
   // асимптотика - амортизированно O(log(N))
-  std::optional<std::pair<std::string, std::string>> removeOneExpiredEntry() const {
+  std::optional<std::pair<std::string, std::string>>
+  removeOneExpiredEntry() const {
     std::unique_lock lock(mutex);
 
     // erase everything that is not relevant
@@ -137,7 +131,11 @@ public:
     return std::nullopt;
   }
 
-  uint32_t size() const { return _data.size(); }
+  uint32_t size() const {
+    std::shared_lock lock(mutex);
+
+    return _data.size();
+  }
 
 private:
   void pure_set(std::string key, std::string value, uint32_t ttl) const {
@@ -168,7 +166,7 @@ private:
     return get_time() + add;
   }
 
-  // everything is mutable, because if we get a const storage with elemets, 
+  // everything is mutable, because if we get a const storage with elemets,
   // that will drop out after some time,
   // we still cant modify it, but it could delete elements itself
   mutable std::shared_mutex mutex;

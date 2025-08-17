@@ -1,4 +1,4 @@
-CONF ?= debug
+CONF ?= debug, release
 
 BUILD_DIR := build
 
@@ -30,10 +30,8 @@ test-%: build-%
 clean:
 	rm -rf $(BUILD_DIR)
 
-# Пути к исходным файлам для форматирования
-FORMAT_SRCS := $(shell find ./src -type f -name '*.h' -or -name '*.cpp' -or -name '*.hpp')
+FORMAT_SRCS := $(shell find ./src ./unittests -type f -name '*.h' -or -name '*.cpp' -or -name '*.hpp')
 
-# Команда для форматирования
 .PHONY: format
 format:
 	clang-format -i --style=file $(FORMAT_SRCS)
